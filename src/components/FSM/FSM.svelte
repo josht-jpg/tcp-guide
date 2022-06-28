@@ -1,7 +1,11 @@
 <script lang="ts">
+	import type { Position } from 'src/types';
+
 	import { clickOutside } from '../../utils/clickOutside';
-	import State from '../State.svelte';
+	import CreatedState from './CreatedState.svelte';
 	import DifficultyButton from './difficultyButton.svelte';
+	import DraggingState from './DraggingState.svelte';
+	import UncreateState from './UncreateState.svelte';
 	export let toggleFsmTest: () => void;
 	// TODO: remove
 	let _ = toggleFsmTest;
@@ -13,9 +17,9 @@
 	}
 	let difficultyLevel: DifficultyLevel;
 
-	const isInEditArea = (event: MouseEvent) =>
+	const isInEditArea = (position: Position) =>
 		document
-			.elementsFromPoint(event.clientX, event.clientY)
+			.elementsFromPoint(position.left + (window.innerWidth * 0.1 + 5), position.top + 24)
 			.some((element) => element.id === 'edit-area');
 
 	let isDraggingNewState = false;
@@ -27,7 +31,40 @@
 	const togglePlaceHolderState = () => {
 		showPlaceHolderState = !showPlaceHolderState;
 	};
+
+	let uncreatedStatePosition: Position;
+	const setInitialStatePosition = (p: Position) => {
+		uncreatedStatePosition = p;
+	};
+
+	let initialCursorPosition: Position;
+	const setInitialCursorPosition = (position: Position) => {
+		initialCursorPosition = position;
+	};
+
+	let createdStates: Position[] = [];
+	const createState = (position: Position) => {
+		createdStates = [...createdStates, position];
+	};
+
+	let isShiftDown = false;
+	const onKeyDown = (event: KeyboardEvent) => {
+		if (event.key === 'Shift') {
+			isShiftDown = true;
+		}
+	};
+
+	const onKeyUp = () => {
+		isShiftDown = false;
+	};
+
+	let cursorPosition: Position;
+	const onMouseMove = (event: MouseEvent) => {
+		cursorPosition = { top: event.clientY, left: event.clientX };
+	};
 </script>
+
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:mousemove={onMouseMove} />
 
 <div
 	use:clickOutside={() => {
@@ -63,12 +100,31 @@
 	{:else if difficultyLevel === DifficultyLevel.HARD}
 		<div class="w-[300px] flex flex-col items-center box-border p-3 pb-5 rounded">
 			<h2>Add a State</h2>
-			<State isDragging={false} {toggleDraggingState} {isInEditArea} />
+			<UncreateState
+				setInitialPosition={setInitialStatePosition}
+				{setInitialCursorPosition}
+				{toggleDraggingState}
+			/>
 			{#if isDraggingNewState}
-				<State isDragging={true} {toggleDraggingState} {isInEditArea} />
+				<DraggingState
+					initalPosition={uncreatedStatePosition}
+					{createState}
+					{initialCursorPosition}
+					{toggleDraggingState}
+					{isInEditArea}
+				/>
 			{/if}
 			<div class="pt-6" />
-			<div id="edit-area" class="w-[60vw] h-[60vh] outline outline-2 outline-blue-200 rounded" />
+			<div id="edit-area" class="w-[60vw] h-[60vh] outline outline-2 outline-blue-200 rounded">
+				{#each createdStates as state}
+					<CreatedState
+						{isShiftDown}
+						initialPosition={state}
+						cursorPositionProp={cursorPosition}
+						{isInEditArea}
+					/>
+				{/each}
+			</div>
 		</div>
 	{:else}
 		<div>here</div>
