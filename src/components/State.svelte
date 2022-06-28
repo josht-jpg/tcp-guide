@@ -4,11 +4,12 @@
 	export let onMouseDown: ((event: MouseEvent) => void) | undefined = undefined;
 	export let position: Position | undefined = undefined;
 	export let isDragging = false;
+	export let id: string | null = null;
 	export let styleProps = '';
 </script>
 
 <div
-	id="uncreated-state"
+	id={!!id ? id : 'uncreated-state'}
 	class={`${!!position ? `absolute ` : ''} rounded box-border h-[58px] w-[112px] ${
 		isDragging ? 'cursor-grabbing' : 'cursor-grab transition-all'
 	} bg-white hover:shadow-blue-500`}

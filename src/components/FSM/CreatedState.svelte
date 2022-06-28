@@ -4,22 +4,24 @@
 	import type { Position } from 'src/types';
 
 	import State from '../State.svelte';
-	import { loop_guard } from 'svelte/internal';
 
 	export let initialPosition: Position;
 	export let isInEditArea: (position: Position) => boolean;
 	export let isShiftDown: boolean;
+	export let index: number;
 
 	let position = initialPosition;
-	export let cursorPositionProp: Position;
 	// TODO: remove (see cursorPositionProp)
 	let cursorPosition: Position;
 	let isDragging = false;
 
 	const onMouseDown = (event: MouseEvent) => {
 		cursorPosition = { top: event.clientY, left: event.clientX };
-		isDragging = true;
+		if (!isShiftDown) {
+			isDragging = true;
+		}
 	};
+
 	const onMouseUp = () => {
 		if (!isInEditArea(position)) {
 			position = initialPosition;
@@ -30,19 +32,11 @@
 		isDragging = false;
 	};
 
-	let constructionInputStartPoint: Position;
-	const createInput = (startPosition: Position) => {
-		constructionInputStartPoint = startPosition;
-	};
-
 	// TODO: pass in, too many event listeners
 	const onMouseMove = (event: MouseEvent) => {
 		event.preventDefault();
 
 		if (isShiftDown) {
-			if (!constructionInputStartPoint) {
-				createInput({ top: event.clientY, left: event.clientX });
-			}
 			return;
 		}
 
@@ -60,20 +54,9 @@
 <svelte:window on:mouseup={onMouseUp} on:mousemove={onMouseMove} />
 
 <State
+	id={`state-node${index}`}
 	{onMouseDown}
 	{position}
 	{isDragging}
 	styleProps={`${isShiftDown ? 'cursor: crosshair;' : ''}`}
 />
-<svg id={CONSTRUCTION_INPUT_CONTAINER_ID} class="z-[-1] absolute w-[78%] h-[95%] bg-transparent">
-	<line
-		x1={(() => {
-			console.log(constructionInputStartPoint, cursorPositionProp);
-			return constructionInputStartPoint?.left;
-		})()}
-		x2={cursorPositionProp?.left}
-		y1={constructionInputStartPoint?.top}
-		y2={cursorPositionProp?.top}
-		class={`${!constructionInputStartPoint ? 'hidden' : ''} stroke-slate-600 opacity-75`}
-	/>
-</svg>

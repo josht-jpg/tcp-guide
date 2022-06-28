@@ -1,10 +1,12 @@
 <script lang="ts">
-	import type { Position } from 'src/types';
+	import type { Input, Position } from '../../types';
 
 	import { clickOutside } from '../../utils/clickOutside';
+	import ConstructionInput from './ConstructionInput.svelte';
 	import CreatedState from './CreatedState.svelte';
 	import DifficultyButton from './difficultyButton.svelte';
 	import DraggingState from './DraggingState.svelte';
+	import CreatedInput from './CreatedInput.svelte';
 	import UncreateState from './UncreateState.svelte';
 	export let toggleFsmTest: () => void;
 	// TODO: remove
@@ -15,7 +17,12 @@
 		MEDIUM = 'MEDUIM',
 		HARD = 'HARD'
 	}
+
 	let difficultyLevel: DifficultyLevel;
+
+	/*
+	
+	*/
 
 	const isInEditArea = (position: Position) =>
 		document
@@ -54,19 +61,29 @@
 		}
 	};
 
-	const onKeyUp = () => {
-		isShiftDown = false;
+	const onKeyUp = (event: KeyboardEvent) => {
+		if (event.key === 'Shift') {
+			isShiftDown = false;
+		}
 	};
 
 	let cursorPosition: Position;
 	const onMouseMove = (event: MouseEvent) => {
 		cursorPosition = { top: event.clientY, left: event.clientX };
 	};
+
+	let inputs: Input[] = [];
+	const addInput = (newInput: Input) => {
+		inputs = [...inputs, newInput];
+	};
+
+	// const mouseUpCallback
 </script>
 
 <svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:mousemove={onMouseMove} />
 
 <div
+	id="fsm-module"
 	use:clickOutside={() => {
 		// toggleFsmTest();
 	}}
@@ -116,13 +133,12 @@
 			{/if}
 			<div class="pt-6" />
 			<div id="edit-area" class="w-[60vw] h-[60vh] outline outline-2 outline-blue-200 rounded">
-				{#each createdStates as state}
-					<CreatedState
-						{isShiftDown}
-						initialPosition={state}
-						cursorPositionProp={cursorPosition}
-						{isInEditArea}
-					/>
+				{#each createdStates as state, index}
+					<CreatedState {index} {isShiftDown} initialPosition={state} {isInEditArea} />
+				{/each}
+				<ConstructionInput {addInput} {cursorPosition} {isShiftDown} />
+				{#each inputs as input}
+					<CreatedInput {input} />
 				{/each}
 			</div>
 		</div>
