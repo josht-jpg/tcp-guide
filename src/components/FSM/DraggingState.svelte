@@ -16,7 +16,6 @@
 	const onMouseUp = () => {
 		toggleDraggingState();
 		if (isInEditArea(statePosition)) {
-			console.log(statePosition);
 			createState(statePosition);
 		}
 	};

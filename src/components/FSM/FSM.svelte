@@ -8,6 +8,7 @@
 	import DraggingState from './DraggingState.svelte';
 	import CreatedInput from './CreatedInput.svelte';
 	import UncreateState from './UncreateState.svelte';
+	import stateUnderCursor from '../../utils/stateUnderCursor';
 	export let toggleFsmTest: () => void;
 	// TODO: remove
 	let _ = toggleFsmTest;
@@ -67,27 +68,87 @@
 		}
 	};
 
-	let cursorPosition: Position;
-	const onMouseMove = (event: MouseEvent) => {
-		cursorPosition = { top: event.clientY, left: event.clientX };
+	let isStateDragging = false;
+	const updateIsDraggingState = (isDragging: boolean) => {
+		isStateDragging = isDragging;
 	};
+
+	let cursorPosition: Position;
 
 	let inputs: Input[] = [];
 	const addInput = (newInput: Input) => {
 		inputs = [...inputs, newInput];
 	};
 
+	let prevInputs: Input[] = [];
+	let resetInputs = () => {
+		console.log('herererere');
+		inputs = [...prevInputs];
+	};
+	let saveInputs = () => {
+		console.log('saved');
+		prevInputs = inputs;
+	};
+
+	// TODO: move all mouseup/down event listeners to this component
+	let isMouseDown = false;
+	const onMouseDown = () => {
+		prevInputs = [...inputs];
+		isMouseDown = true;
+	};
+	const onMouseUp = () => {
+		isMouseDown = false;
+	};
+
+	const onMouseMove = (event: MouseEvent) => {
+		if (!cursorPosition) {
+			cursorPosition = { top: event.clientY, left: event.clientX };
+			return;
+		}
+
+		const movingState = stateUnderCursor(cursorPosition);
+		// Check if dragging state
+		if (!!movingState && isMouseDown && !isShiftDown) {
+			const changeInX = event.clientX - cursorPosition.left;
+			const changeInY = event.clientY - cursorPosition.top;
+
+			inputs.forEach((input, index) => {
+				if (input.startStateId === movingState.id) {
+					inputs[index] = {
+						...input,
+						x1: input.x1 + changeInX,
+						y1: input.y1 + changeInY
+					};
+				} else if (input.endStateId === movingState.id) {
+					inputs[index] = {
+						...inputs[index],
+						x2: input.x2 + changeInX,
+						y2: input.y2 + changeInY
+					};
+				}
+			});
+		}
+
+		cursorPosition = { top: event.clientY, left: event.clientX };
+	};
+
 	// const mouseUpCallback
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:mousemove={onMouseMove} />
+<svelte:window
+	on:keydown={onKeyDown}
+	on:keyup={onKeyUp}
+	on:mousemove={onMouseMove}
+	on:mousedown={onMouseDown}
+	on:mouseup={onMouseUp}
+/>
 
 <div
 	id="fsm-module"
 	use:clickOutside={() => {
 		// toggleFsmTest();
 	}}
-	class="fixed flex flex-col items-center top-6 w-[80vw] left-[calc(10vw - 5px)] bg-white shadow-2xl rounded border-box p-8 max-h-[90vh]"
+	class="fixed flex flex-col items-center top-6 w-[80vw] left-[calc(10vw - 5px)] bg-white shadow-2xl border-2 border-blue-400 rounded border-box p-8 max-h-[90vh]"
 >
 	{#if !difficultyLevel}
 		<h1 class="text-xl">Choose Test</h1>
@@ -134,12 +195,22 @@
 			<div class="pt-6" />
 			<div id="edit-area" class="w-[60vw] h-[60vh] outline outline-2 outline-blue-200 rounded">
 				{#each createdStates as state, index}
-					<CreatedState {index} {isShiftDown} initialPosition={state} {isInEditArea} />
+					<CreatedState
+						{index}
+						{isShiftDown}
+						initialPosition={state}
+						{isInEditArea}
+						{resetInputs}
+						{saveInputs}
+						{updateIsDraggingState}
+					/>
 				{/each}
 				<ConstructionInput {addInput} {cursorPosition} {isShiftDown} />
-				{#each inputs as input}
-					<CreatedInput {input} />
-				{/each}
+				<svg class="z-[-1] w-[60vw] h-[60vh] bg-transparent" style="fill: none;">
+					{#each inputs as input}
+						<CreatedInput {input} {cursorPosition} {isStateDragging} />
+					{/each}
+				</svg>
 			</div>
 		</div>
 	{:else}

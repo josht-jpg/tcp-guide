@@ -4,11 +4,15 @@
 	import type { Position } from 'src/types';
 
 	import State from '../State.svelte';
+	import StateDailog from './StateDailog.svelte';
 
 	export let initialPosition: Position;
 	export let isInEditArea: (position: Position) => boolean;
 	export let isShiftDown: boolean;
 	export let index: number;
+	export let resetInputs: () => void;
+	export let saveInputs: () => void;
+	export let updateIsDraggingState: (isDragging: boolean) => void;
 
 	let position = initialPosition;
 	// TODO: remove (see cursorPositionProp)
@@ -19,17 +23,23 @@
 		cursorPosition = { top: event.clientY, left: event.clientX };
 		if (!isShiftDown) {
 			isDragging = true;
+			updateIsDraggingState(true);
 		}
 	};
 
 	const onMouseUp = () => {
-		if (!isInEditArea(position)) {
-			position = initialPosition;
-		} else {
-			initialPosition = position;
-		}
+		if (isDragging) {
+			if (!isInEditArea(position)) {
+				position = initialPosition;
+				resetInputs();
+			} else {
+				initialPosition = position;
+				saveInputs();
+			}
 
-		isDragging = false;
+			updateIsDraggingState(false);
+			isDragging = false;
+		}
 	};
 
 	// TODO: pass in, too many event listeners
@@ -49,14 +59,29 @@
 			cursorPosition = { top: event.clientY, left: event.clientX };
 		}
 	};
+	let showDialog = false;
+	const onRightClick = () => {
+		showDialog = true;
+	};
+
+	// TODO: make enum
+	let stateName = '';
+	let updateStateName = (newName: string) => {
+		stateName = newName;
+	};
 </script>
 
 <svelte:window on:mouseup={onMouseUp} on:mousemove={onMouseMove} />
 
 <State
 	id={`state-node${index}`}
+	{onRightClick}
 	{onMouseDown}
 	{position}
 	{isDragging}
 	styleProps={`${isShiftDown ? 'cursor: crosshair;' : ''}`}
 />
+
+{#if showDialog}
+	<StateDailog {stateName} {cursorPosition} {updateStateName} />
+{/if}

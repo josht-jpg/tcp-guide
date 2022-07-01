@@ -1,18 +1,15 @@
-export function clickOutside(element, callbackFunction) {
-	function onClick(event) {
-		if (!element.contains(event.target) && event.srcElement.id !== 'fsm-toggle') {
-			callbackFunction();
+export function clickOutside(node) {
+	const handleClick = (event) => {
+		if (node && !node.contains(event.target) && !event.defaultPrevented) {
+			node.dispatchEvent(new CustomEvent('click_outside', node));
 		}
-	}
+	};
 
-	document.body.addEventListener('click', onClick);
+	document.addEventListener('click', handleClick, true);
 
 	return {
-		update(newCallbackFunction) {
-			callbackFunction = newCallbackFunction;
-		},
 		destroy() {
-			document.body.removeEventListener('click', onClick);
+			document.removeEventListener('click', handleClick, true);
 		}
 	};
 }

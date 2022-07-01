@@ -46,7 +46,7 @@
 
 		// TODO: change name
 		const receivingState = stateUnderCursor(cursorPosition);
-		if (!!receivingState) {
+		if (!!receivingState && startStateId !== receivingState.id) {
 			addInput({ startStateId, endStateId: receivingState.id, ...inputCoordinates });
 		}
 	};
